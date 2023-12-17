@@ -506,6 +506,7 @@ impl CompilationUnit {
         while let Some(token) = lexer.next_token() {
             tokens.push(token);
         }
+        println!("{:?}", tokens);
         let diagnostics_bag: DiagnosticsBagCell = Rc::new(RefCell::new(diagnostics::DiagnosticsBag::new()));
         let mut ast = Ast::new();
         let mut global_scope = GlobalScope::new();
@@ -548,7 +549,7 @@ impl CompilationUnit {
         } else {
             self.ast.visit(&mut eval);
         }
-        println!("Result: {:?}", eval.last_value);
+        println!("{:?}", eval.last_value);
     }
 
 

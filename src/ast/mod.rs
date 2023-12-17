@@ -8,7 +8,7 @@ use fusion_compiler::{Idx, idx, IdxVec};
 use printer::ASTPrinter;
 use visitor::ASTVisitor;
 
-use crate::ast::lexer::Token;
+use crate::ast::lexer::{ Token, StringFragment, StringKind };
 
 use crate::compilation_unit::{FunctionIdx, VariableIdx};
 use crate::text::span::TextSpan;
@@ -56,7 +56,7 @@ impl Ast {
     fn query_stmt_mut(&mut self, stmt_id: StmtId) -> &mut Stmt {
         &mut self.statements[stmt_id]
     }
-
+    
     pub fn set_variable(&mut self, expr_id: ExprId, variable_idx: VariableIdx) {
         let expr = self.query_expr_mut(expr_id);
         match &mut expr.kind {
@@ -381,6 +381,7 @@ pub enum ExprKind {
     ),
 }
 
+
 #[derive(Debug, Clone)]
 pub struct CallExpr {
     pub callee: Token,
@@ -606,6 +607,7 @@ impl Expr {
                 TextSpan::combine(spans)
             }
             ExprKind::Error(span) => span.clone(),
+           
         }
     }
 }

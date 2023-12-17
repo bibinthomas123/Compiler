@@ -1,10 +1,13 @@
 use std::fmt::{Display, Formatter};
 use crate::text::span::TextSpan;
 
+
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     // Literals
     Number(i64),
+    Decimal(f64),
     // Operators
     Plus,
     Minus,
@@ -12,6 +15,7 @@ pub enum TokenKind {
     Slash,
     Equals,
     Ampersand,
+    Dot,
     Pipe,
     Caret,
     DoubleAsterisk,
@@ -37,6 +41,7 @@ pub enum TokenKind {
     OpenBrace,
     CloseBrace,
     Comma,
+    String ,
     Colon,
     SemiColon,
     Arrow,
@@ -45,7 +50,24 @@ pub enum TokenKind {
     Whitespace,
     Identifier,
     Eof,
+    //testing
+    StringEnd
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum StringFragment {
+    Literal { len: usize },
+    Interpolation { tokens: Vec<Token> },
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum StringKind {
+    // Delimited by one double-quote: "
+    Normal,
+    // Delimited by two single-quotes: ''
+    Indented,
+}
+
 
 impl Display for TokenKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -87,6 +109,11 @@ impl Display for TokenKind {
             TokenKind::Colon => write!(f, "Colon"),
             TokenKind::Arrow => write!(f, "Arrow"),
             TokenKind::SemiColon => write!(f, ";"),
+            TokenKind::Dot => write!(f, "."),
+            TokenKind::String { .. } => write!(f, "String"),
+            TokenKind::StringEnd => write!(f, "StringEnd"),
+            TokenKind::Decimal(_) => write!(f, "Decimal"),
+
         }
     }
 }
@@ -129,10 +156,27 @@ impl<'a> Lexer<'a> {
             if Self::is_number_start(&c) {
                 let number: i64 = self.consume_number();
                 kind = TokenKind::Number(number);
-            } else if Self::is_whitespace(&c){
+            } 
+            else if Self::is_decimal(&c){
+                let decimal: f64 = self.consume_decimal();
+                println!("{} from is decimal",decimal);
+                kind = TokenKind::Decimal(decimal); 
+            }
+            else if Self::is_whitespace(&c){
                 self.consume();
                 kind = TokenKind::Whitespace;
-            } else if Self::is_identifier_start(&c){
+            }
+            else if Self::is_string_start(&c) {
+                let _string_literal = self.consume_string();
+                // kind = TokenKind::String {
+                //     fragments: StringFragment::Literal { len: string_literal.len() },
+                //     kind: StringKind::Normal,
+                //     is_terminated: true,
+                // };
+                kind = TokenKind::String;
+            } 
+            
+            else if Self::is_identifier_start(&c){
                 let identifier = self.consume_identifier();
                 kind = match identifier.as_str() {
                     "let" => TokenKind::Let,
@@ -198,7 +242,7 @@ impl<'a> Lexer<'a> {
             },
             ';' => {
                 TokenKind::SemiColon
-            },
+            }
 
             _ => TokenKind::Bad,
         }
@@ -221,8 +265,16 @@ impl<'a> Lexer<'a> {
         c.is_digit(10)
     }
 
+    fn is_string_start(c: &char) -> bool {
+        *c == '"' || *c == '\''
+    }
+
     fn is_identifier_start(c: &char) -> bool {
         c.is_alphabetic()
+    }
+
+    fn is_decimal(c: &char) -> bool {
+       *c == 'd'  
     }
 
     fn is_whitespace(c: &char) -> bool {
@@ -268,4 +320,74 @@ impl<'a> Lexer<'a> {
         }
         number
     }
+
+    fn consume_string(&mut self) -> String {
+        let mut string = String::new();
+        let quote_char = self.consume().unwrap(); // Consume the opening quote character
+
+        while let Some(c) = self.current_char() {
+            if c == quote_char {
+                self.consume().unwrap(); // Consume the closing quote character
+                break;
+            }
+            string.push(c);
+            self.consume().unwrap();
+        }
+        string
+    }
+
+    
+    fn consume_decimal(&mut self) -> f64 {
+        // Check for the 'f' prefix
+        let is_float = if let Some('d') = self.current_char() {
+            self.consume().unwrap(); // Consume the 'f'
+            true
+        } else {
+            false
+        };
+    
+        // Parse the float literal without the 'f' prefix
+        let float_literal = self.parse_float_literal();
+        // Adjust the result based on whether it's a float or not
+        if is_float {
+            float_literal
+        } else {
+            float_literal as f64
+        }
+    }
+    
+    fn parse_float_literal(&mut self) -> f64 {
+        let start = self.current_pos;
+
+    
+        // Consume the digits before the decimal point
+        while let Some(c) = self.current_char() {
+            if c.is_digit(10) {
+                self.consume().unwrap();
+            } else {
+                break;
+            }
+        }
+    
+        // Check for the decimal point
+        if let Some('.') = self.current_char() {
+            self.consume().unwrap(); // Consume the decimal point
+    
+            // Consume the digits after the decimal point
+            while let Some(c) = self.current_char() {
+                if c.is_digit(10) {
+                    self.consume().unwrap();
+                } else {
+                    break;
+                }
+            }
+        }
+    
+        // Parse the consumed characters as a float
+        let literal = &self.input[start..self.current_pos];
+        literal.parse().unwrap_or(0.0)
+    }
+    
+    
+    
 }
