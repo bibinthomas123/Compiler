@@ -1,5 +1,4 @@
 use std::cell::Cell;
-
 use crate::ast::{Ast, BinOpAssociativity, BinOperator, BinOpKind, ElseBranch, Expr, ExprId, FuncDeclParameter, FunctionReturnTypeSyntax, Item, ItemKind, StaticTypeAnnotation, Stmt, StmtId, UnOperator, UnOpKind};
 use crate::ast::lexer::{Token, TokenKind};
 use crate::compilation_unit::{GlobalScope, resolve_type_from_string};

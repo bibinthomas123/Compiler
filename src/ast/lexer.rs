@@ -8,6 +8,8 @@ pub enum TokenKind {
     // Literals
     Number(i64),
     Decimal(f64),
+    String ,
+    StringEnd,
     // Operators
     Plus,
     Minus,
@@ -41,7 +43,6 @@ pub enum TokenKind {
     OpenBrace,
     CloseBrace,
     Comma,
-    String ,
     Colon,
     SemiColon,
     Arrow,
@@ -50,8 +51,7 @@ pub enum TokenKind {
     Whitespace,
     Identifier,
     Eof,
-    //testing
-    StringEnd
+  
 }
 
 #[derive(Debug, PartialEq, Clone)]
