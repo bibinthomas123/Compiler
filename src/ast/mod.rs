@@ -733,14 +733,14 @@ mod test {
             self.visit_expression(ast, while_statement.body);
         }
 
-        fn visit_block_expr(&mut self, ast: &mut Ast, block_statement: &BlockExpr, expr: &Expr) {
+        fn visit_block_expr(&mut self, ast: &mut Ast, block_statement: &BlockExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::Block);
             for statement in &block_statement.stmts {
                 self.visit_statement(ast, *statement);
             }
         }
 
-        fn visit_if_expression(&mut self, ast: &mut Ast, if_statement: &IfExpr, expr: &Expr) {
+        fn visit_if_expression(&mut self, ast: &mut Ast, if_statement: &IfExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::If);
             self.visit_expression(ast, if_statement.condition);
             self.visit_expression(ast, if_statement.then_branch);
@@ -751,24 +751,24 @@ mod test {
             }
         }
 
-        fn visit_let_statement(&mut self, ast: &mut Ast, let_statement: &LetStmt, stmt: &Stmt) {
+        fn visit_let_statement(&mut self, ast: &mut Ast, let_statement: &LetStmt, _stmt: &Stmt) {
             self.actual.push(TestASTNode::Let);
             self.visit_expression(ast, let_statement.initializer);
         }
 
-        fn visit_call_expression(&mut self, ast: &mut Ast, call_expression: &CallExpr, expr: &Expr) {
+        fn visit_call_expression(&mut self, ast: &mut Ast, call_expression: &CallExpr,_expr: &Expr) {
             self.actual.push(TestASTNode::Call);
             for argument in &call_expression.arguments {
                 self.visit_expression(ast, *argument);
             }
         }
 
-        fn visit_assignment_expression(&mut self, ast: &mut Ast, assignment_expression: &AssignExpr, expr: &Expr) {
+        fn visit_assignment_expression(&mut self, ast: &mut Ast, assignment_expression: &AssignExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::Assignment);
             self.visit_expression(ast, assignment_expression.expression);
         }
 
-        fn visit_variable_expression(&mut self, ast: &mut Ast, variable_expression: &VarExpr, expr: &Expr) {
+        fn visit_variable_expression(&mut self, _ast: &mut Ast, variable_expression: &VarExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::Variable(
                 variable_expression.identifier().to_string()
             ));
@@ -810,7 +810,7 @@ mod test {
             self.visit_expression(ast, parenthesized_expression.expression);
         }
 
-        fn visit_func_decl(&mut self, ast: &mut Ast, func_decl: &FunctionDeclaration, item_id: super::ItemId) {
+        fn visit_func_decl(&mut self, _ast: &mut Ast, _func_decl: &FunctionDeclaration, _item_id: super::ItemId) {
             todo!()
         }
 

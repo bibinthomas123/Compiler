@@ -459,7 +459,7 @@ impl ASTVisitor for Resolver {
     fn visit_number_expression(&mut self, ast: &mut Ast, _number: &NumberExpr, expr: &Expr) {
         ast.set_type(expr.id, Type::Int);
     }
-    fn visit_decimal_expression(&mut self, ast: &mut Ast, _number: &DecimalExpr, expr: &Expr) {
+    fn visit_decimal_expression(&mut self, ast: &mut Ast, number: &DecimalExpr, expr: &Expr) {
         ast.set_type(expr.id, Type::Float);
     }
     fn visit_string_expression(&mut self, ast: &mut Ast, _number: &StringExpr, expr: &Expr) {
@@ -523,7 +523,7 @@ impl CompilationUnit {
             &mut global_scope,
         );
         parser.parse();
-        ast.visualize();
+        ast.visualize();  // to visualize the 
         Self::check_diagnostics(&text, &diagnostics_bag).map_err(|_| Rc::clone(&diagnostics_bag))?;
         let scopes = Scopes::from_global_scope(global_scope);
         let mut resolver = Resolver::new(Rc::clone(&diagnostics_bag), scopes);

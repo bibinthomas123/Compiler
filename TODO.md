@@ -1,11 +1,12 @@
 [ ] addition of floats 
 [ ] type conversions 
-[ ] parse float
 [ ] add a warning mention to prefix the float with 'd'
+[ ] adding the string indexing 
 
 # Completed
 
 [x] parse string
+[x] parse float
 [x] consume string
 [x] consume float
 [x] construct ast

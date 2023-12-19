@@ -109,7 +109,7 @@ impl Value {
 
     pub fn expect_string(&self) -> &str {
         match self {
-            Value::String(string) => "",
+            Value::String(_string) => "",
             _ => panic!("Expected string value"),
         }
     }
@@ -273,9 +273,9 @@ impl<'a> ASTVisitor for ASTEvaluator<'a> {
 
     fn visit_decimal_expression(
         &mut self,
-        ast: &mut Ast,
+        _ast: &mut Ast,
         number: &super::DecimalExpr,
-        expr: &Expr,
+        _expr: &Expr,
     ) {
         self.last_value = Some(Value::Decimal(number.number));
     }

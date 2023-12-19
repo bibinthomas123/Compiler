@@ -63,6 +63,10 @@ impl DiagnosticsBag {
         self.report_error(format!("Undeclared function '{}'", token.span.literal), token.span.clone());
     }
 
+    pub fn report_undeclared_d_before_decimal(&mut self, token: &Token) {
+        self.report_error(format!("Expected d before the decimal value '{}'", token.span.literal), token.span.clone());
+    }
+
     pub fn report_cannot_call_no_callable_expression(&mut self, callee_span: &TextSpan, callee_type: &Type) {
         self.report_error(format!("Cannot call non-callable expression of type '{}'", callee_type), callee_span.clone());
     }
