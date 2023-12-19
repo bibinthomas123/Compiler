@@ -1,2 +1,4 @@
-let string = " hey world "
-let number = d56.5
+let a = "hello world"
+let b =d56.2
+a
+b

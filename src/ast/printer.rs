@@ -197,6 +197,18 @@ impl ASTVisitor for ASTPrinter {
                                       number.number, ));
     }
 
+    fn visit_decimal_expression(&mut self, _ast: &mut Ast, number: &DecimalExpr, _expr: &Expr) {
+        self.result.push_str(&format!("{}{}",
+                                      Self::NUMBER_COLOR.fg_str(),
+                                      number.number, ));
+    }  
+
+    fn visit_string_expression(&mut self, _ast: &mut Ast, string: &StringExpr, _expr: &Expr) {
+        self.result.push_str(&format!("{}{}",
+                                      Self::TEXT_COLOR.fg_str(),
+                                      string.string, ));
+    }
+
     fn visit_boolean_expression(&mut self, _ast: &mut Ast, boolean: &BoolExpr, _expr: &Expr) {
         self.add_boolean(boolean.value);
     }

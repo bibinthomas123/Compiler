@@ -1,5 +1,6 @@
 
 use std::hash::Hash;
+use std::string;
 
 
 use termion::color::{Fg, Reset};
@@ -147,6 +148,14 @@ impl Ast {
 
     pub fn number_expression(&mut self, token: Token, number: i64) -> &Expr {
         self.expr_from_kind(ExprKind::Number(NumberExpr { number, token }))
+    }
+    
+    pub fn decimal_expression(&mut self, token:Token, number: f64) -> &Expr {
+        self.expr_from_kind(ExprKind::Decimal(DecimalExpr { number, token }))
+    }
+
+    pub fn string_expression(&mut self, token:Token, string: String) -> &Expr {
+        self.expr_from_kind(ExprKind::String(StringExpr { string, token }))
     }
 
     pub fn binary_expression(&mut self, operator: BinOperator, left: ExprId, right: ExprId) -> &Expr {
@@ -353,6 +362,12 @@ pub enum ExprKind {
     Number(
         NumberExpr
     ),
+    Decimal(
+        DecimalExpr
+    ),
+    String(
+        StringExpr
+    ),
     Binary(
         BinaryExpr
     ),
@@ -529,6 +544,17 @@ pub struct NumberExpr {
 }
 
 #[derive(Debug, Clone)]
+pub struct DecimalExpr{
+    pub number: f64,
+    pub token: Token,
+}
+#[derive(Debug, Clone)]
+pub struct StringExpr {
+    pub string: String,
+    pub token: Token,
+}
+
+#[derive(Debug, Clone)]
 pub struct ParenthesizedExpr {
     pub left_paren: Token,
     pub expression: ExprId,
@@ -565,6 +591,8 @@ impl Expr {
                 let right = ast.query_expr(expr.right).span(ast);
                 TextSpan::combine(vec![left, operator, right])
             }
+            ExprKind::Decimal(expr) => expr.token.span.clone(),
+            ExprKind::String(expr) => expr.token.span.clone(),
             ExprKind::Unary(expr) => {
                 let operator = expr.operator.token.span.clone();
                 let operand = ast.query_expr(expr.operand).span(ast);
@@ -607,6 +635,7 @@ impl Expr {
                 TextSpan::combine(spans)
             }
             ExprKind::Error(span) => span.clone(),
+
            
         }
     }
@@ -614,15 +643,17 @@ impl Expr {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{AssignExpr, Ast, BinaryExpr, BlockExpr, BoolExpr, CallExpr, Expr, FunctionDeclaration, IfExpr, LetStmt, NumberExpr, ParenthesizedExpr, ReturnStmt, Stmt, UnaryExpr, VarExpr, WhileStmt};
+    use crate::ast::{AssignExpr, Ast, BinaryExpr, BlockExpr, BoolExpr, CallExpr, Expr, FunctionDeclaration, IfExpr, LetStmt, NumberExpr,StringExpr,DecimalExpr, ParenthesizedExpr, ReturnStmt, Stmt, UnaryExpr, VarExpr, WhileStmt};
     use crate::compilation_unit::CompilationUnit;
     use crate::text::span::TextSpan;
 
     use super::visitor::ASTVisitor;
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug)]
     enum TestASTNode {
         Number(i64),
+        Decimal(f64),
+        String(String),
         Boolean(bool),
         Binary,
         Unary,
@@ -644,6 +675,24 @@ mod test {
         actual: Vec<TestASTNode>,
         ast: Ast,
     }
+
+    impl Eq for TestASTNode {}
+
+    impl PartialEq for TestASTNode{
+        fn eq(&self,other:&Self) -> bool{
+            match (self, other) {
+                (TestASTNode::Number(n1), TestASTNode::Number(n2)) => n1 == n2,
+                (TestASTNode::Decimal(n1), TestASTNode::Decimal(n2)) => {
+                    let diff = (n1 - n2).abs();
+                    diff < 0.0000000000001 //floating point precision 
+                },
+                (TestASTNode::String(s1), TestASTNode::String(s2)) => s1 == s2,
+                (TestASTNode::Boolean(b1), TestASTNode::Boolean(b2)) => b1 == b2,
+                _ => false,
+            }
+        }
+    }
+    
 
     impl ASTVerifier {
         pub fn new(input: &str, expected: Vec<TestASTNode>) -> Self {
@@ -671,11 +720,6 @@ mod test {
     }
 
     impl ASTVisitor for ASTVerifier {
-        // fn visit_func_decl(&mut self, ast: &mut Ast, func_decl_statement: &FunctionDeclaration, item_id: ItemId) {
-        //     self.actual.push(TestASTNode::Func);
-        //     self.visit_expression(ast, func_decl_statement.body);
-        // }
-
         fn visit_return_statement(&mut self, ast: &mut Ast, return_statement: &ReturnStmt) {
             self.actual.push(TestASTNode::Return);
             if let Some(expression) = &return_statement.return_value {
@@ -730,36 +774,131 @@ mod test {
             ));
         }
 
-        fn visit_number_expression(&mut self, ast: &mut Ast, number: &NumberExpr, expr: &Expr) {
+        fn visit_number_expression(&mut self, _ast: &mut Ast, number: &NumberExpr,_expr: &Expr) {
             self.actual.push(TestASTNode::Number(number.number));
         }
 
-        fn visit_boolean_expression(&mut self, ast: &mut Ast, boolean: &BoolExpr, expr: &Expr) {
+        fn visit_decimal_expression(&mut self, _ast:&mut Ast, decimal: &DecimalExpr, _expr: &Expr) {
+            self.actual.push(TestASTNode::Decimal(decimal.number));
+        }
+
+        fn visit_string_expression(&mut self, _ast: &mut Ast, string: &StringExpr, _expr: &Expr) {
+            self.actual.push(TestASTNode::String(string.string.clone()));
+        }
+
+        fn visit_boolean_expression(&mut self, _ast: &mut Ast, boolean: &BoolExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::Boolean(boolean.value));
         }
 
-        fn visit_error(&mut self, ast: &mut Ast, span: &TextSpan) {
+        fn visit_error(&mut self, _ast: &mut Ast, _span: &TextSpan) {
             // do nothing
         }
 
-        fn visit_unary_expression(&mut self, ast: &mut Ast, unary_expression: &UnaryExpr, expr: &Expr) {
+        fn visit_unary_expression(&mut self, ast: &mut Ast, unary_expression: &UnaryExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::Unary);
             self.visit_expression(ast, unary_expression.operand);
         }
 
-        fn visit_binary_expression(&mut self, ast: &mut Ast, binary_expression: &BinaryExpr, expr: &Expr) {
+        fn visit_binary_expression(&mut self, ast: &mut Ast, binary_expression: &BinaryExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::Binary);
             self.visit_expression(ast, binary_expression.left);
             self.visit_expression(ast, binary_expression.right);
         }
 
-        fn visit_parenthesized_expression(&mut self, ast: &mut Ast, parenthesized_expression: &ParenthesizedExpr, expr: &Expr) {
+        fn visit_parenthesized_expression(&mut self, ast: &mut Ast, parenthesized_expression: &ParenthesizedExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::Parenthesized);
             self.visit_expression(ast, parenthesized_expression.expression);
         }
 
         fn visit_func_decl(&mut self, ast: &mut Ast, func_decl: &FunctionDeclaration, item_id: super::ItemId) {
             todo!()
+        }
+
+        fn visit_item(&mut self, ast: &mut Ast, item: super::ItemId) {
+            self.visit_item_default(ast, item);
+        }
+
+        fn visit_item_default(&mut self, ast: &mut Ast, item: super::ItemId) {
+            let item = ast.query_item(item).clone();
+            match &item.kind {
+                super::ItemKind::Stmt(stmt) => {
+                    self.visit_statement(ast, *stmt);
+                }
+                super::ItemKind::Function(func_decl) => {
+                    self.visit_func_decl(ast, func_decl, item.id);
+                }
+            }
+        }
+
+        fn do_visit_statement(&mut self, ast: &mut Ast, statement: super::StmtId) {
+            let statement = ast.query_stmt(statement).clone();
+            match &statement.kind {
+                super::StmtKind::Expr(expr) => {
+                    self.visit_expression(ast, *expr);
+                }
+                super::StmtKind::Let(expr) => {
+                    self.visit_let_statement(ast, expr, &statement);
+                }
+                super::StmtKind::While(stmt) => {
+                    self.visit_while_statement(ast, &stmt);
+                }
+                super::StmtKind::Return(stmt) => {
+                    self.visit_return_statement(ast, &stmt);
+                }
+            }
+        }
+
+        fn visit_statement(&mut self, ast: &mut Ast, statement: super::StmtId) {
+            self.do_visit_statement(ast, statement);
+        }
+
+        fn do_visit_expression(&mut self, ast: &mut Ast, expression: super::ExprId) {
+            let expression = ast.query_expr(expression).clone();
+            match &expression.kind {
+                super::ExprKind::Number(number) => {
+                    self.visit_number_expression(ast, number, &expression);
+                }
+                super::ExprKind::Decimal(decimal) => {
+                    self.visit_decimal_expression(ast, decimal, &expression);
+                }
+                super::ExprKind::String(string) => {
+                    self.visit_string_expression(ast, string, &expression);
+                }
+                super::ExprKind::Binary(expr) => {
+                    self.visit_binary_expression(ast, expr, &expression);
+                }
+                super::ExprKind::Parenthesized(expr) => {
+                    self.visit_parenthesized_expression(ast, expr, &expression);
+                }
+                super::ExprKind::Error(span) => {
+                    self.visit_error(ast, span);
+                }
+                super::ExprKind::Variable(expr) => {
+                    self.visit_variable_expression(ast, expr, &expression);
+                }
+                super::ExprKind::Unary(expr) => {
+                    self.visit_unary_expression(ast, expr, &expression);
+                }
+                super::ExprKind::Assignment(expr) => {
+                    self.visit_assignment_expression(ast, expr, &expression);
+                }
+                super::ExprKind::Boolean(expr) => {
+                    self.visit_boolean_expression(ast, expr, &expression);
+                }
+                super::ExprKind::Call(expr) => {
+                    self.visit_call_expression(ast, expr, &expression);
+                }
+                super::ExprKind::If(expr) => {
+                    self.visit_if_expression(ast, expr, &expression);
+                }
+                super::ExprKind::Block(block_expr) => {
+                    self.visit_block_expr(ast, &block_expr, &expression);
+                }
+            }
+        }
+
+        fn visit_expression(&mut self, ast: &mut Ast, expression: super::ExprId) {
+            self.do_visit_expression(ast, expression);
         }
     }
 

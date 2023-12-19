@@ -3,7 +3,7 @@ use std::rc::Rc;
 use fusion_compiler::{Idx, idx, IdxVec};
 
 use crate::{diagnostics, text};
-use crate::ast::{AssignExpr, Ast, BinaryExpr, BinOpKind, BlockExpr, BoolExpr, CallExpr, Expr, ExprId, FunctionDeclaration, IfExpr, ItemId, LetStmt, NumberExpr, ParenthesizedExpr, ReturnStmt, Stmt, StmtKind, UnaryExpr, UnOpKind, VarExpr, WhileStmt};
+use crate::ast::{AssignExpr, Ast, BinaryExpr, BinOpKind, BlockExpr, BoolExpr, CallExpr, Expr, ExprId, FunctionDeclaration, IfExpr, ItemId, LetStmt, NumberExpr, ParenthesizedExpr, ReturnStmt, Stmt, StmtKind, UnaryExpr, UnOpKind, VarExpr, WhileStmt, StringExpr, DecimalExpr};
 use crate::ast::evaluator::ASTEvaluator;
 use crate::ast::lexer::{Lexer, Token};
 use crate::ast::parser::Parser;
@@ -458,6 +458,12 @@ impl ASTVisitor for Resolver {
 
     fn visit_number_expression(&mut self, ast: &mut Ast, _number: &NumberExpr, expr: &Expr) {
         ast.set_type(expr.id, Type::Int);
+    }
+    fn visit_decimal_expression(&mut self, ast: &mut Ast, _number: &DecimalExpr, expr: &Expr) {
+        ast.set_type(expr.id, Type::Float);
+    }
+    fn visit_string_expression(&mut self, ast: &mut Ast, _number: &StringExpr, expr: &Expr) {
+        ast.set_type(expr.id, Type::String);
     }
 
     fn visit_boolean_expression(&mut self, ast: &mut Ast, _boolean: &BoolExpr, expr: &Expr) {

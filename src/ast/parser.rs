@@ -369,6 +369,13 @@ impl<'a> Parser<'a> {
             TokenKind::Number(number) => {
                 self.ast.number_expression(token, number)
             }
+            TokenKind::String(ref string) => {
+                self.ast.string_expression(token.clone(), string.to_string())
+            }
+           
+            TokenKind::Decimal(decimal) => {
+                self.ast.decimal_expression(token, decimal)
+            }
             TokenKind::LeftParen => {
                 let expr = self.parse_expr();
                 let left_paren = token;

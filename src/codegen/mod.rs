@@ -53,6 +53,8 @@ impl <'a> CTranspiler<'a> {
         return match ty {
             Type::Int => "int".to_string(),
             Type::Bool => "int".to_string(),
+            Type::Float => "float".to_string(),
+            Type::String => "char*".to_string(),
             Type::Void => "void".to_string(),
             Type::Unresolved => panic!("Unresolved type"),
             Type::Error => panic!("Error type"),
@@ -89,6 +91,8 @@ impl <'a> CTranspiler<'a> {
         let expr = ast.query_expr(expr);
         return match &expr.kind {
             ExprKind::Number(_) => true,
+            ExprKind::Decimal(_) => true,
+            ExprKind::String(_) => true,
             ExprKind::Binary(binary_expr) => {
                 let left = self.is_valid_r_value(ast,binary_expr.left);
                 let right = self.is_valid_r_value(ast, binary_expr.right);
@@ -180,6 +184,13 @@ impl ASTVisitor for CTranspiler<'_> {
         self.result.push_str(&number.number.to_string());
     }
 
+    fn visit_decimal_expression(&mut self, ast: &mut Ast, decimal: &crate::ast::DecimalExpr, expr: &Expr) {
+        self.result.push_str(&decimal.number.to_string());
+    }
+
+    fn visit_string_expression(&mut self, ast: &mut Ast, string: &crate::ast::StringExpr, expr: &Expr) {
+        self.result.push_str(&string.string);
+    }
     fn visit_boolean_expression(&mut self, _ast: &mut Ast, boolean: &BoolExpr, _expr: &Expr) {
         self.result.push_str(if boolean.value { "1" } else { "0" });
     }

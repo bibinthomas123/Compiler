@@ -2,6 +2,8 @@ use crate::ast::{AssignExpr, Ast, BinaryExpr, BlockExpr, BoolExpr, CallExpr, Exp
 
 use crate::text::span::TextSpan;
 
+use super::{DecimalExpr, StringExpr};
+
 pub trait ASTVisitor {
     fn visit_item(&mut self, ast: &mut Ast, item: ItemId) {
         self.visit_item_default(ast, item);
@@ -72,6 +74,12 @@ pub trait ASTVisitor {
             ExprKind::Number(number) => {
                 self.visit_number_expression(ast, number, &expression);
             }
+            ExprKind::Decimal(decimal) =>{
+                self.visit_decimal_expression(ast, decimal, &expression);
+            }
+            ExprKind::String(string) => {
+                self.visit_string_expression(ast, string, &expression);
+            }
             ExprKind::Binary(expr) => {
                 self.visit_binary_expression(ast, expr, &expression);
             }
@@ -121,6 +129,11 @@ pub trait ASTVisitor {
     fn visit_variable_expression(&mut self, ast: &mut Ast, variable_expression: &VarExpr, expr: &Expr);
 
     fn visit_number_expression(&mut self, ast: &mut Ast, number: &NumberExpr, expr: &Expr);
+
+    fn visit_decimal_expression(&mut self, ast: &mut Ast, number: &DecimalExpr, expr: &Expr);
+
+    fn visit_string_expression(&mut self, ast: &mut Ast, string: &StringExpr, expr: &Expr);
+    
 
     fn visit_boolean_expression(&mut self, ast: &mut Ast, boolean: &BoolExpr, expr: &Expr);
 

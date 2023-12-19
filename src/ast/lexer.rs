@@ -8,7 +8,7 @@ pub enum TokenKind {
     // Literals
     Number(i64),
     Decimal(f64),
-    String ,
+    String(String),
     StringEnd,
     // Operators
     Plus,
@@ -51,6 +51,7 @@ pub enum TokenKind {
     Whitespace,
     Identifier,
     Eof,
+    // Null
   
 }
 
@@ -73,6 +74,7 @@ impl Display for TokenKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             TokenKind::Number(_) => write!(f, "Number"),
+            TokenKind::Decimal(_) => write!(f, "Decimal"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
             TokenKind::Asterisk => write!(f, "*"),
@@ -112,7 +114,6 @@ impl Display for TokenKind {
             TokenKind::Dot => write!(f, "."),
             TokenKind::String { .. } => write!(f, "String"),
             TokenKind::StringEnd => write!(f, "StringEnd"),
-            TokenKind::Decimal(_) => write!(f, "Decimal"),
 
         }
     }
@@ -167,13 +168,14 @@ impl<'a> Lexer<'a> {
                 kind = TokenKind::Whitespace;
             }
             else if Self::is_string_start(&c) {
-                let _string_literal = self.consume_string();
+                let string_literal = self.consume_string();
                 // kind = TokenKind::String {
                 //     fragments: StringFragment::Literal { len: string_literal.len() },
                 //     kind: StringKind::Normal,
                 //     is_terminated: true,
                 // };
-                kind = TokenKind::String;
+                println!("{} from is string",string_literal);
+                kind = TokenKind::String(string_literal);
             } 
             
             else if Self::is_identifier_start(&c){
