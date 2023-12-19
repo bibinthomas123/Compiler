@@ -1,8 +1,6 @@
 use std::fmt::{Display, Formatter};
 use crate::text::span::TextSpan;
 
-
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     // Literals
@@ -160,7 +158,6 @@ impl<'a> Lexer<'a> {
             } 
             else if Self::is_decimal(&c){
                 let decimal: f64 = self.consume_decimal();
-                println!("{} from is decimal",decimal);
                 kind = TokenKind::Decimal(decimal); 
             }
             else if Self::is_whitespace(&c){
@@ -169,12 +166,6 @@ impl<'a> Lexer<'a> {
             }
             else if Self::is_string_start(&c) {
                 let string_literal = self.consume_string();
-                // kind = TokenKind::String {
-                //     fragments: StringFragment::Literal { len: string_literal.len() },
-                //     kind: StringKind::Normal,
-                //     is_terminated: true,
-                // };
-                println!("{} from is string",string_literal);
                 kind = TokenKind::String(string_literal);
             } 
             

@@ -1,5 +1,9 @@
-use crate::ast::{AssignExpr, Ast, BinaryExpr, BinOperator, BinOpKind, BlockExpr, BoolExpr, Expr, ExprId, ExprKind, FunctionDeclaration, ItemId, ItemKind, LetStmt, NumberExpr, ParenthesizedExpr, Stmt, StmtId, UnaryExpr, UnOperator, UnOpKind, VarExpr};
 use crate::ast::visitor::ASTVisitor;
+use crate::ast::{
+    AssignExpr, Ast, BinOpKind, BinOperator, BinaryExpr, BlockExpr, BoolExpr, Expr, ExprId,
+    ExprKind, FunctionDeclaration, ItemId, ItemKind, LetStmt, NumberExpr, ParenthesizedExpr, Stmt,
+    StmtId, UnOpKind, UnOperator, UnaryExpr, VarExpr,
+};
 use crate::compilation_unit::{GlobalScope, VariableIdx};
 use crate::text::span::TextSpan;
 use crate::typings::Type;
@@ -11,7 +15,7 @@ pub struct CTranspiler<'a> {
     pub l_value_stack: Vec<(VariableIdx, ExprId)>,
 }
 
-impl <'a> CTranspiler<'a> {
+impl<'a> CTranspiler<'a> {
     pub fn new(global_scope: &'a GlobalScope) -> Self {
         Self {
             result: String::new(),
@@ -26,8 +30,7 @@ impl <'a> CTranspiler<'a> {
 
         for item in items.iter() {
             match &item.kind {
-                ItemKind::Stmt(_stmt) => {
-                }
+                ItemKind::Stmt(_stmt) => {}
                 ItemKind::Function(function_decl) => {
                     self.visit_func_decl(ast, function_decl, item.id);
                 }
@@ -71,6 +74,11 @@ impl <'a> CTranspiler<'a> {
     fn transpile_binary_operator(&self, operator: &BinOperator) -> &'static str {
         return match &operator.kind {
             BinOpKind::Plus => "+",
+            BinOpKind::PlusDecimal => "+",
+            BinOpKind::MinusDecimal => "-",
+            BinOpKind::MultiplyDecimal => "*",
+            BinOpKind::DivideDecimal => "/",
+            BinOpKind::PlusString => "+",
             BinOpKind::Minus => "-",
             BinOpKind::Multiply => "*",
             BinOpKind::Divide => "/",
@@ -87,19 +95,21 @@ impl <'a> CTranspiler<'a> {
         };
     }
 
-    fn is_valid_r_value(&self,ast: &Ast, expr: ExprId) -> bool {
+    fn is_valid_r_value(&self, ast: &Ast, expr: ExprId) -> bool {
         let expr = ast.query_expr(expr);
         return match &expr.kind {
             ExprKind::Number(_) => true,
             ExprKind::Decimal(_) => true,
             ExprKind::String(_) => true,
             ExprKind::Binary(binary_expr) => {
-                let left = self.is_valid_r_value(ast,binary_expr.left);
+                let left = self.is_valid_r_value(ast, binary_expr.left);
                 let right = self.is_valid_r_value(ast, binary_expr.right);
                 left && right
             }
             ExprKind::Unary(_) => self.is_valid_r_value(ast, expr.id),
-            ExprKind::Parenthesized(parenthesized_expr) => self.is_valid_r_value(ast, parenthesized_expr.expression),
+            ExprKind::Parenthesized(parenthesized_expr) => {
+                self.is_valid_r_value(ast, parenthesized_expr.expression)
+            }
             ExprKind::Variable(_) => true,
             ExprKind::Assignment(assign_expr) => self.is_valid_r_value(ast, assign_expr.expression),
             ExprKind::Boolean(_) => true,
@@ -137,7 +147,12 @@ impl <'a> CTranspiler<'a> {
 }
 
 impl ASTVisitor for CTranspiler<'_> {
-    fn visit_func_decl(&mut self, ast: &mut Ast, func_decl: &FunctionDeclaration, _item_id: ItemId) {
+    fn visit_func_decl(
+        &mut self,
+        ast: &mut Ast,
+        func_decl: &FunctionDeclaration,
+        _item_id: ItemId,
+    ) {
         let function = self.global_scope.functions.get(func_decl.idx);
         self.write_type(&function.return_type);
         self.write_whitespace();
@@ -175,8 +190,16 @@ impl ASTVisitor for CTranspiler<'_> {
         self.visit_expression(ast, let_statement.initializer);
     }
 
-    fn visit_variable_expression(&mut self, _ast: &mut Ast, variable_expression: &VarExpr, _expr: &Expr) {
-        let variable = self.global_scope.variables.get(variable_expression.variable_idx);
+    fn visit_variable_expression(
+        &mut self,
+        _ast: &mut Ast,
+        variable_expression: &VarExpr,
+        _expr: &Expr,
+    ) {
+        let variable = self
+            .global_scope
+            .variables
+            .get(variable_expression.variable_idx);
         self.result.push_str(&variable.name);
     }
 
@@ -184,11 +207,21 @@ impl ASTVisitor for CTranspiler<'_> {
         self.result.push_str(&number.number.to_string());
     }
 
-    fn visit_decimal_expression(&mut self, ast: &mut Ast, decimal: &crate::ast::DecimalExpr, expr: &Expr) {
+    fn visit_decimal_expression(
+        &mut self,
+        _ast: &mut Ast,
+        decimal: &crate::ast::DecimalExpr,
+        _expr: &Expr,
+    ) {
         self.result.push_str(&decimal.number.to_string());
     }
 
-    fn visit_string_expression(&mut self, ast: &mut Ast, string: &crate::ast::StringExpr, expr: &Expr) {
+    fn visit_string_expression(
+        &mut self,
+        _ast: &mut Ast,
+        string: &crate::ast::StringExpr,
+        _expr: &Expr,
+    ) {
         self.result.push_str(&string.string);
     }
     fn visit_boolean_expression(&mut self, _ast: &mut Ast, boolean: &BoolExpr, _expr: &Expr) {
@@ -199,26 +232,54 @@ impl ASTVisitor for CTranspiler<'_> {
         self.result.push_str("/* error */");
     }
 
-    fn visit_unary_expression(&mut self, ast: &mut Ast, unary_expression: &UnaryExpr, _expr: &Expr) {
-        self.result.push_str(self.transpile_unary_operator(&unary_expression.operator));
+    fn visit_unary_expression(
+        &mut self,
+        ast: &mut Ast,
+        unary_expression: &UnaryExpr,
+        _expr: &Expr,
+    ) {
+        self.result
+            .push_str(self.transpile_unary_operator(&unary_expression.operator));
         self.visit_expression(ast, unary_expression.operand);
     }
 
-    fn visit_assignment_expression(&mut self, ast: &mut Ast, assignment_expression: &AssignExpr, _expr: &Expr) {
-        self.result.push_str(&self.global_scope.variables.get(assignment_expression.variable_idx).name);
+    fn visit_assignment_expression(
+        &mut self,
+        ast: &mut Ast,
+        assignment_expression: &AssignExpr,
+        _expr: &Expr,
+    ) {
+        self.result.push_str(
+            &self
+                .global_scope
+                .variables
+                .get(assignment_expression.variable_idx)
+                .name,
+        );
         self.result.push_str(" = ");
         self.visit_expression(ast, assignment_expression.expression);
     }
 
-    fn visit_binary_expression(&mut self, ast: &mut Ast, binary_expression: &BinaryExpr, _expr: &Expr) {
+    fn visit_binary_expression(
+        &mut self,
+        ast: &mut Ast,
+        binary_expression: &BinaryExpr,
+        _expr: &Expr,
+    ) {
         self.visit_expression(ast, binary_expression.left);
         self.write_whitespace();
-        self.result.push_str(self.transpile_binary_operator(&binary_expression.operator));
+        self.result
+            .push_str(self.transpile_binary_operator(&binary_expression.operator));
         self.write_whitespace();
         self.visit_expression(ast, binary_expression.right);
     }
 
-    fn visit_parenthesized_expression(&mut self, ast: &mut Ast, parenthesized_expression: &ParenthesizedExpr, _expr: &Expr) {
+    fn visit_parenthesized_expression(
+        &mut self,
+        ast: &mut Ast,
+        parenthesized_expression: &ParenthesizedExpr,
+        _expr: &Expr,
+    ) {
         self.result.push('(');
         self.visit_expression(ast, parenthesized_expression.expression);
         self.result.push(')');
@@ -230,13 +291,13 @@ impl ASTVisitor for CTranspiler<'_> {
         }
         if let Some((assign_to, r_value_id)) = self.l_value_stack.last() {
             if *r_value_id == expr.id {
-                self.result.push_str(&self.global_scope.variables.get(*assign_to).name);
+                self.result
+                    .push_str(&self.global_scope.variables.get(*assign_to).name);
                 self.result.push_str(" = ");
             }
         }
         if let Some(last_stmt) = block_expr.stmts.last() {
             self.visit_statement(ast, *last_stmt);
         }
-
     }
 }

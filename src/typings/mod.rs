@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter};
 
-
 #[derive(Debug, Clone)]
 pub enum Type {
     Int,
@@ -19,7 +18,7 @@ impl Display for Type {
             Type::Int => "int",
             Type::Bool => "bool",
             Type::Float => "float",
-            Type::String => "char*",
+            Type::String => "string",
             // Type::Null => "null",
             Type::Unresolved => "unresolved",
             Type::Void => "void",
@@ -35,7 +34,10 @@ impl Type {
         match (self, other) {
             (Type::Int, Type::Int) => true,
             (Type::Float, Type::Float) => true,
+            (Type::Float, Type::Int) => true,
+            (Type::Int, Type::Float) => true,
             (Type::String, Type::String) => true,
+            (Type::String, Type::Int) => false,
             (Type::Bool, Type::Bool) => true,
             (Type::Error, _) => true,
             (_, Type::Error) => true,

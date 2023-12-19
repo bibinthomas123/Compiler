@@ -1,8 +1,10 @@
+use crate::ast::evaluator::Value as OtherValue;
 use fusion_compiler::Idx;
 use std::collections::HashMap;
 use std::string;
 use std::sync::Arc;
 
+use crate::ast;
 use crate::ast::visitor::ASTVisitor;
 use crate::ast::{
     AssignExpr, Ast, BinOpKind, BinaryExpr, BlockExpr, BoolExpr, CallExpr, Expr,
@@ -10,7 +12,7 @@ use crate::ast::{
     UnaryExpr, VarExpr, WhileStmt,
 };
 use crate::compilation_unit::{FunctionIdx, GlobalScope, VariableIdx};
-use crate::text::span::TextSpan;
+use crate::text::span::TextSpan; // Add the missing import statement for the `ast` module
 
 #[derive(Debug)]
 pub struct Frame {
@@ -263,12 +265,7 @@ impl<'a> ASTVisitor for ASTEvaluator<'a> {
         string: &super::StringExpr,
         _expr: &Expr,
     ) {
-        if let Some(_first_char) = string.string.chars().next() {
-            self.last_value = Some(Value::String(Arc::new(string.string.clone())));
-        } else {
-            // handling empty string
-            self.last_value = Some(Value::String(Arc::new(" ".to_string())));
-        }
+        self.last_value = Some(Value::String(Arc::new(string.string.clone())));
     }
 
     fn visit_decimal_expression(
@@ -307,14 +304,81 @@ impl<'a> ASTVisitor for ASTEvaluator<'a> {
         let left = self.expect_last_value();
         self.visit_expression(ast, binary_expr.right);
         let right = self.expect_last_value();
+       
         self.last_value = Some(match binary_expr.operator.kind {
-            BinOpKind::Plus => Value::Number(left.expect_number() + right.expect_number()),
-            BinOpKind::Minus => Value::Number(left.expect_number() - right.expect_number()),
-            BinOpKind::Multiply => Value::Number(left.expect_number() * right.expect_number()),
-            BinOpKind::Divide => Value::Number(left.expect_number() / right.expect_number()),
+            BinOpKind::Plus => match (left.clone(), right.clone()) {
+                (Value::Number(left_val), Value::Number(right_val)) => {
+                    Value::Number(left_val + right_val)
+                }
+                (Value::Decimal(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val + right_val)
+                }
+                (Value::Number(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val as f64 + right_val)
+                }
+                (Value::Decimal(left_val), Value::Number(right_val)) => {
+                    Value::Decimal(left_val + right_val as f64)
+                }
+                (Value::String(left_val), Value::String(right_val)) => {
+                    let mut string = String::with_capacity(left_val.len() + right_val.len());
+                    print!("left_val: {:?}", left_val);
+                    string.push_str(&left_val as &str);
+                    string.push_str(&right_val as &str);
+                    Value::String(Arc::new(string))
+                }
+                _ => panic!("Invalid operands for addition"),
+            },
+            BinOpKind::Minus => match (left.clone(), right.clone()) {
+                (Value::Number(left_val), Value::Number(right_val)) => {
+                    Value::Number(left_val - right_val)
+                }
+                (Value::Decimal(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val - right_val)
+                }
+                (Value::Number(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val as f64 - right_val)
+                }
+                (Value::Decimal(left_val), Value::Number(right_val)) => {
+                    Value::Decimal(left_val - right_val as f64)
+                }
+                _ => panic!("Invalid operands for subtraction"),
+            },
+            BinOpKind::Multiply => match (left.clone(), right.clone()) {
+                (Value::Number(left_val), Value::Number(right_val)) => {
+                    Value::Number(left_val * right_val)
+                }
+                (Value::Decimal(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val * right_val)
+                }
+                (Value::Number(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val as f64 * right_val)
+                }
+                (Value::Decimal(left_val), Value::Number(right_val)) => {
+                    Value::Decimal(left_val * right_val as f64)
+                }
+
+                _ => panic!("Invalid operands for Multiplication"),
+            },
+            BinOpKind::Divide => match (left.clone(), right.clone()) {
+                (Value::Number(left_val), Value::Number(right_val)) => {
+                    Value::Number(left_val / right_val)
+                }
+                (Value::Decimal(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val / right_val)
+                }
+                (Value::Number(left_val), Value::Decimal(right_val)) => {
+                    Value::Decimal(left_val as f64 / right_val)
+                }
+                (Value::Decimal(left_val), Value::Number(right_val)) => {
+                    Value::Decimal(left_val / right_val as f64)
+                },
+                _ => panic!("Invalid operands for Division"),
+            }
+
             BinOpKind::Power => {
                 Value::Number(left.expect_number().pow(right.expect_number() as u32))
             }
+
             BinOpKind::BitwiseAnd => Value::Number(left.expect_number() & right.expect_number()),
             BinOpKind::BitwiseOr => Value::Number(left.expect_number() | right.expect_number()),
             BinOpKind::BitwiseXor => Value::Number(left.expect_number() ^ right.expect_number()),
@@ -328,8 +392,17 @@ impl<'a> ASTVisitor for ASTEvaluator<'a> {
             BinOpKind::GreaterThanOrEqual => {
                 Value::Boolean(left.expect_number() >= right.expect_number())
             }
+            BinOpKind::MinusDecimal => todo!(),
+            BinOpKind::MultiplyDecimal => todo!(),
+            BinOpKind::DivideDecimal => todo!(),
+            BinOpKind::PlusDecimal => todo!(),
+            BinOpKind::PlusString => todo!(),
         });
+    
+        
     }
+
+    
 
     fn visit_parenthesized_expression(
         &mut self,

@@ -473,6 +473,13 @@ pub enum BinOpKind {
     Multiply,
     Divide,
     Power,
+    //float arithmetic
+    PlusDecimal,
+    MinusDecimal,
+    MultiplyDecimal,
+    DivideDecimal,
+    //string arithmetic
+    PlusString,
     // Bitwise
     BitwiseAnd,
     BitwiseOr,
@@ -509,6 +516,11 @@ impl BinOperator {
             BinOpKind::Multiply => 19,
             BinOpKind::Divide => 19,
             BinOpKind::Plus => 18,
+            BinOpKind::PlusDecimal => 18,
+            BinOpKind::MinusDecimal => 18,
+            BinOpKind::MultiplyDecimal => 18,
+            BinOpKind::DivideDecimal => 18,
+            BinOpKind::PlusString => 18,
             BinOpKind::Minus => 18,
             BinOpKind::BitwiseAnd => 17,
             BinOpKind::BitwiseXor => 16,
@@ -782,7 +794,7 @@ mod test {
             self.actual.push(TestASTNode::Decimal(decimal.number));
         }
 
-        fn visit_string_expression(&mut self, _ast: &mut Ast, string: &StringExpr, _expr: &Expr) {
+        fn visit_string_expression(&mut self, ast: &mut Ast, string: &StringExpr, _expr: &Expr) {
             self.actual.push(TestASTNode::String(string.string.clone()));
         }
 
