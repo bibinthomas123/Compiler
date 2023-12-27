@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use crate::text::span::TextSpan;
+use std::process;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
@@ -267,7 +268,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn is_decimal(c: &char) -> bool {
-       *c == 'd'  
+       *c == 'd'|| *c == '.'
     }
 
     fn is_whitespace(c: &char) -> bool {
@@ -331,12 +332,13 @@ impl<'a> Lexer<'a> {
 
     
     fn consume_decimal(&mut self) -> f64 {
-        // Check for the 'f' prefix
+        // Check for the 'd' prefix
         let is_float = if let Some('d') = self.current_char() {
-            self.consume().unwrap(); // Consume the 'f'
+            self.consume().unwrap(); // Consume the 'd'
             true
         } else {
-            false
+            eprintln!("Expected 'd' after float literal");
+            process::exit(1);
         };
     
         // Parse the float literal without the 'f' prefix
@@ -352,7 +354,6 @@ impl<'a> Lexer<'a> {
     fn parse_float_literal(&mut self) -> f64 {
         let start = self.current_pos;
 
-    
         // Consume the digits before the decimal point
         while let Some(c) = self.current_char() {
             if c.is_digit(10) {
